@@ -1,9 +1,7 @@
 from __future__ import absolute_import, division, print_function
-import copy, random
 from game import Game
-from __future__ import absolute_import, division, print_function
 import copy, random, math
-from game import Game
+
 
 MOVES = {0: 'up', 1: 'left', 2: 'down', 3: 'right'}
 MAX_PLAYER, CHANCE_PLAYER = 0, 1 
