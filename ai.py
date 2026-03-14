@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 import copy, random
 from game import Game
+from __future__ import absolute_import, division, print_function
+import copy, random, math
+from game import Game
 
 MOVES = {0: 'up', 1: 'left', 2: 'down', 3: 'right'}
 MAX_PLAYER, CHANCE_PLAYER = 0, 1 
@@ -150,5 +153,122 @@ class AI:
         return direction
 
     def compute_decision_ec(self):
-        return random.randint(0, 3)
+        self.build_tree(self.root, self.search_depth)
+        direction, _ = self.expectimax_ec(self.root)
+        return direction
+        
+    def heuristic_value(self, state):
+        """
+        Better leaf evaluation for Exp-3.
+        state = (tile_matrix, score)
+        """
+        tile_matrix, score = state
+        n = len(tile_matrix)
+
+        empty_cells = 0
+        max_tile = 0
+        smoothness_penalty = 0
+        monotonicity_bonus = 0
+
+        # Count empty cells and max tile
+        for i in range(n):
+            for j in range(n):
+                val = tile_matrix[i][j]
+                if val == 0:
+                    empty_cells += 1
+                if val > max_tile:
+                    max_tile = val
+
+        # Smoothness penalty:
+        # penalize big differences between adjacent nonzero tiles
+        for i in range(n):
+            for j in range(n):
+                if tile_matrix[i][j] == 0:
+                    continue
+
+                curr = math.log(tile_matrix[i][j], 2)
+
+                if i + 1 < n and tile_matrix[i + 1][j] != 0:
+                    below = math.log(tile_matrix[i + 1][j], 2)
+                    smoothness_penalty += abs(curr - below)
+
+                if j + 1 < n and tile_matrix[i][j + 1] != 0:
+                    right = math.log(tile_matrix[i][j + 1], 2)
+                    smoothness_penalty += abs(curr - right)
+
+        # Monotonicity bonus:
+        # reward rows/columns that are consistently increasing/decreasing
+        for i in range(n):
+            inc_score = 0
+            dec_score = 0
+            for j in range(n - 1):
+                a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
+                b = math.log(tile_matrix[i][j + 1], 2) if tile_matrix[i][j + 1] != 0 else 0
+                if a >= b:
+                    dec_score += a - b
+                else:
+                    inc_score += b - a
+            monotonicity_bonus += max(inc_score, dec_score)
+
+        for j in range(n):
+            inc_score = 0
+            dec_score = 0
+            for i in range(n - 1):
+                a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
+                b = math.log(tile_matrix[i + 1][j], 2) if tile_matrix[i + 1][j] != 0 else 0
+                if a >= b:
+                    dec_score += a - b
+                else:
+                    inc_score += b - a
+            monotonicity_bonus += max(inc_score, dec_score)
+
+        max_tile_bonus = math.log(max_tile, 2) if max_tile > 0 else 0
+
+        value = (
+            1.0 * score
+            + 250.0 * empty_cells
+            + 20.0 * max_tile_bonus
+            + 8.0 * monotonicity_bonus
+            - 3.0 * smoothness_penalty
+        )
+
+        return value
+
+
+    def expectimax_ec(self, node=None):
+        """
+        Expectimax using heuristic leaf evaluation instead of raw score.
+        """
+        if node.is_terminal():
+            return (None, self.heuristic_value(node.state))
+
+        elif node.player_type == MAX_PLAYER:
+            max_value = float("-inf")
+            max_direction = None
+
+            for (direction, child) in node.children:
+                _, value = self.expectimax_ec(child)
+                if value > max_value:
+                    max_value = value
+                    max_direction = direction
+
+            return (max_direction, max_value)
+
+        elif node.player_type == CHANCE_PLAYER:
+            total = 0
+
+            for (_, child) in node.children:
+                _, value = self.expectimax_ec(child)
+                total += value
+
+            average = total / len(node.children)
+            return (None, average)
+
+
+
+
+
+
+
+
 
