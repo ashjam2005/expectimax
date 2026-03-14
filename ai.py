@@ -156,106 +156,106 @@ class AI:
         return direction
         
     def heuristic_value(self, state):
-    """
-    Improved heuristic for 2048.
-    Rewards:
-    - actual score
-    - empty cells
-    - keeping large values in a corner
-    - monotonic decreasing board from that corner
-    - merge opportunities
-    Penalizes:
-    - rough / unsmooth neighboring tiles
-    """
-    tile_matrix, score = state
-    n = len(tile_matrix)
-
-    empty_cells = 0
-    max_tile = 0
-    smoothness = 0
-    merge_potential = 0
-
-    # Count empties and max tile
-    for i in range(n):
+        """
+        Improved heuristic for 2048.
+        Rewards:
+        - actual score
+        - empty cells
+        - keeping large values in a corner
+        - monotonic decreasing board from that corner
+        - merge opportunities
+        Penalizes:
+        - rough / unsmooth neighboring tiles
+        """
+        tile_matrix, score = state
+        n = len(tile_matrix)
+    
+        empty_cells = 0
+        max_tile = 0
+        smoothness = 0
+        merge_potential = 0
+    
+        # Count empties and max tile
+        for i in range(n):
+            for j in range(n):
+                val = tile_matrix[i][j]
+                if val == 0:
+                    empty_cells += 1
+                if val > max_tile:
+                    max_tile = val
+    
+        # Smoothness penalty + merge opportunities
+        for i in range(n):
+            for j in range(n):
+                if tile_matrix[i][j] == 0:
+                    continue
+    
+                curr = math.log(tile_matrix[i][j], 2)
+    
+                # Compare with right neighbor
+                if j + 1 < n and tile_matrix[i][j + 1] != 0:
+                    right = math.log(tile_matrix[i][j + 1], 2)
+                    smoothness -= abs(curr - right)
+                    if tile_matrix[i][j] == tile_matrix[i][j + 1]:
+                        merge_potential += 1
+    
+                # Compare with down neighbor
+                if i + 1 < n and tile_matrix[i + 1][j] != 0:
+                    down = math.log(tile_matrix[i + 1][j], 2)
+                    smoothness -= abs(curr - down)
+                    if tile_matrix[i][j] == tile_matrix[i + 1][j]:
+                        merge_potential += 1
+    
+        # Monotonicity score
+        monotonicity = 0
+    
+        for i in range(n):
+            for j in range(n - 1):
+                a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
+                b = math.log(tile_matrix[i][j + 1], 2) if tile_matrix[i][j + 1] != 0 else 0
+                monotonicity -= abs(a - b)
+    
         for j in range(n):
-            val = tile_matrix[i][j]
-            if val == 0:
-                empty_cells += 1
-            if val > max_tile:
-                max_tile = val
-
-    # Smoothness penalty + merge opportunities
-    for i in range(n):
-        for j in range(n):
-            if tile_matrix[i][j] == 0:
-                continue
-
-            curr = math.log(tile_matrix[i][j], 2)
-
-            # Compare with right neighbor
-            if j + 1 < n and tile_matrix[i][j + 1] != 0:
-                right = math.log(tile_matrix[i][j + 1], 2)
-                smoothness -= abs(curr - right)
-                if tile_matrix[i][j] == tile_matrix[i][j + 1]:
-                    merge_potential += 1
-
-            # Compare with down neighbor
-            if i + 1 < n and tile_matrix[i + 1][j] != 0:
-                down = math.log(tile_matrix[i + 1][j], 2)
-                smoothness -= abs(curr - down)
-                if tile_matrix[i][j] == tile_matrix[i + 1][j]:
-                    merge_potential += 1
-
-    # Monotonicity score
-    monotonicity = 0
-
-    for i in range(n):
-        for j in range(n - 1):
-            a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
-            b = math.log(tile_matrix[i][j + 1], 2) if tile_matrix[i][j + 1] != 0 else 0
-            monotonicity -= abs(a - b)
-
-    for j in range(n):
-        for i in range(n - 1):
-            a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
-            b = math.log(tile_matrix[i + 1][j], 2) if tile_matrix[i + 1][j] != 0 else 0
-            monotonicity -= abs(a - b)
-
-    # Weighted board favoring large tiles in top-left corner
-    weights = [
-        [65536, 16384, 4096, 1024],
-        [256,   1024,  256,   64],
-        [16,      64,   16,    4],
-        [1,        4,    1,    0]
-    ]
-
-    weighted_sum = 0
-    for i in range(n):
-        for j in range(n):
-            weighted_sum += tile_matrix[i][j] * weights[i][j]
-
-    # Bonus if max tile is in a corner
-    corner_bonus = 0
-    corners = [
-        tile_matrix[0][0],
-        tile_matrix[0][n - 1],
-        tile_matrix[n - 1][0],
-        tile_matrix[n - 1][n - 1]
-    ]
-    if max_tile in corners:
-        corner_bonus = max_tile
-
-    value = (
-        1.0 * score
-        + 300.0 * empty_cells
-        + 2.0 * smoothness
-        + 80.0 * merge_potential
-        + 1.0 * monotonicity
-        + 0.1 * weighted_sum
-        + 10.0 * corner_bonus
-    )
-
-    return value
+            for i in range(n - 1):
+                a = math.log(tile_matrix[i][j], 2) if tile_matrix[i][j] != 0 else 0
+                b = math.log(tile_matrix[i + 1][j], 2) if tile_matrix[i + 1][j] != 0 else 0
+                monotonicity -= abs(a - b)
+    
+        # Weighted board favoring large tiles in top-left corner
+        weights = [
+            [65536, 16384, 4096, 1024],
+            [256,   1024,  256,   64],
+            [16,      64,   16,    4],
+            [1,        4,    1,    0]
+        ]
+    
+        weighted_sum = 0
+        for i in range(n):
+            for j in range(n):
+                weighted_sum += tile_matrix[i][j] * weights[i][j]
+    
+        # Bonus if max tile is in a corner
+        corner_bonus = 0
+        corners = [
+            tile_matrix[0][0],
+            tile_matrix[0][n - 1],
+            tile_matrix[n - 1][0],
+            tile_matrix[n - 1][n - 1]
+        ]
+        if max_tile in corners:
+            corner_bonus = max_tile
+    
+        value = (
+            1.0 * score
+            + 300.0 * empty_cells
+            + 2.0 * smoothness
+            + 80.0 * merge_potential
+            + 1.0 * monotonicity
+            + 0.1 * weighted_sum
+            + 10.0 * corner_bonus
+        )
+    
+        return value
 
 
     def expectimax_ec(self, node=None):
