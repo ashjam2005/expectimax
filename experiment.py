@@ -26,12 +26,6 @@ def has_any_valid_move(state):
 
 
 def run_single_game(mode="exp1", max_moves=1000, seed=0):
-    """
-    mode:
-        'exp1'          -> depth-1 expectimax with score leaves
-        'exp3'          -> depth-3 expectimax with score leaves
-        'exp3_improved' -> depth-3 expectimax with improved heuristic leaves
-    """
     random.seed(seed)
 
     game = Game()
@@ -46,15 +40,12 @@ def run_single_game(mode="exp1", max_moves=1000, seed=0):
         if mode == "exp1":
             ai = AI(state, search_depth=1)
             direction = ai.compute_decision()
-
         elif mode == "exp3":
             ai = AI(state, search_depth=3)
             direction = ai.compute_decision()
-
         elif mode == "exp3_improved":
             ai = AI(state, search_depth=3)
             direction = ai.compute_decision_ec()
-
         else:
             raise ValueError("Unknown mode")
 
@@ -63,11 +54,11 @@ def run_single_game(mode="exp1", max_moves=1000, seed=0):
 
         moved = game.move(direction)
 
-        # If AI somehow gives an invalid move, stop
         if not moved:
             break
 
-        # Record actual engine score after the move
+        game.place_random_tile()
+
         _, score = game.current_state()
         scores.append(score)
 
