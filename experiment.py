@@ -58,6 +58,9 @@ def run_single_game(mode="exp1", max_moves=1000, seed=0):
         else:
             raise ValueError("Unknown mode")
 
+        if direction is None:
+            break
+
         moved = game.move(direction)
 
         # If AI somehow gives an invalid move, stop
